@@ -28,6 +28,11 @@ export interface TokenResponse {
   accessToken: string;
 }
 
+export interface DashboardStatsResponse {
+  totalDocuments: number;
+  totalConversations: number;
+}
+
 export interface RoleResponse {
   id: string;
   role: string;
@@ -154,6 +159,15 @@ export const api = {
     refresh: (): Promise<ApiResponse<string>> => {
       return request<ApiResponse<string>>('/api/v1/auth/refresh', {
         method: 'POST',
+      });
+    },
+  },
+
+  // Dashboard APIs
+  dashboard: {
+    getStats: (): Promise<ApiResponse<DashboardStatsResponse>> => {
+      return request<ApiResponse<DashboardStatsResponse>>('/api/v1/dashboard/stats', {
+        method: 'GET',
       });
     },
   },
