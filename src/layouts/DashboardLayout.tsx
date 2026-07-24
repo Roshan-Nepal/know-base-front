@@ -30,7 +30,7 @@ export const DashboardLayout: React.FC = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Documents', path: '#documents', icon: FileText },
+    { name: 'Documents', path: '/documents', icon: FileText },
     { name: 'Chat', path: '#chat', icon: MessageSquare },
     ...(user?.roles?.includes('ROLE_ADMIN') ? [{ name: 'Admin', path: '#admin', icon: ShieldCheck }] : [])
   ];
@@ -153,10 +153,13 @@ export const DashboardLayout: React.FC = () => {
             />
           </div>
           <div className="ml-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-white text-black font-medium border border-slate-200 dark:border-transparent hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors">
+            <Link 
+              to="/documents/upload"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-white text-black font-medium border border-slate-200 dark:border-transparent hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors"
+            >
               <Plus className="h-4 w-4" />
               Upload
-            </button>
+            </Link>
           </div>
         </header>
 
