@@ -30,7 +30,7 @@ export const RecentDocument: React.FC<RecentDocumentProps> = ({ name, timeAgo, s
             {name}
           </h4>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {status === 'Ready' ? 'Indexed' : 'Uploading'} {timeAgo}
+            Uploaded {timeAgo}
           </p>
         </div>
       </div>
