@@ -1,190 +1,73 @@
+import axios from 'axios';
+
+import type { ApiResponse, ProblemDetail } from '../types';
+
 // API Client for the Know-Base App
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+export const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
 
-// API Response Models matching Backend DTOs
-export interface ApiResponse<T> {
-  data: T;
-  message: string;
-  success: boolean;
-  timeStamp: string;
-}
-
-export interface PageResponse<T> {
-  data: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
-
-export interface UserResponse {
-  id: string;
-  username: string;
-  email: string;
-  roles: string[];
-}
-
-export interface TokenResponse {
-  accessToken: string;
-}
-
-export interface DashboardStatsResponse {
-  totalDocuments: number;
-  totalConversations: number;
-}
-
-export interface RoleResponse {
-  id: string;
-  role: string;
-}
-
-// Spring RFC 7807 Problem Detail format for backend errors
-export interface ProblemDetail {
-  type?: string;
-  title?: string;
-  status?: number;
-  detail?: string;
-  instance?: string;
-  errorCode?: string;
-  timestamp?: string;
-  [key: string]: any;
-}
-
-class ApiError extends Error {
-  status: number;
-  problemDetail?: ProblemDetail;
-
-  constructor(message: string, status: number, problemDetail?: ProblemDetail) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.problemDetail = problemDetail;
-  }
-}
-
-// Helper to get headers
-const getHeaders = (token?: string | null): HeadersInit => {
-  const headers: HeadersInit = {
+// Create an Axios instance
+export const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+  headers: {
     'Content-Type': 'application/json',
-  };
-  
-  const savedToken = token || localStorage.getItem('accessToken');
-  if (savedToken) {
-    headers['Authorization'] = `Bearer ${savedToken}`;
+  },
+});
+
+// Request interceptor to attach the access token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  
-  return headers;
-};
+);
 
-// Generic Fetch Wrapper
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${BASE_URL}${endpoint}`;
-  
-  // Attach default headers
-  const headers = getHeaders();
-  options.headers = {
-    ...headers,
-    ...options.headers,
-  };
-  options.credentials = 'include';
+// Response interceptor to handle token refresh on 401
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-  try {
-    const response = await fetch(url, options);
-    
-    if (!response.ok) {
-      let errorMsg = `HTTP error! Status: ${response.status}`;
-      let problemDetail: ProblemDetail | undefined;
-      
+    // Check if error is 401 and request hasn't been retried yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
       try {
-        const body = await response.json();
-        problemDetail = body as ProblemDetail;
-        errorMsg = problemDetail.detail || problemDetail.title || errorMsg;
-      } catch (e) {
-        // Response is not JSON, fallback to status text
-        errorMsg = response.statusText || errorMsg;
+        // Use axios instead of axiosInstance to avoid interceptor loop
+        const response = await axios.post<ApiResponse<string>>(
+          `${BASE_URL}/api/v1/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+
+        if (response.data.success) {
+          const newToken = response.data.data;
+          localStorage.setItem('accessToken', newToken);
+          
+          // Retry the original request with the new token
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return axiosInstance(originalRequest);
+        }
+      } catch (refreshError) {
+        // If refresh fails, clear token and reject
+        localStorage.removeItem('accessToken');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
       }
-      
-      throw new ApiError(errorMsg, response.status, problemDetail);
     }
-
-    // Handles void responses or 204 No Content
-    if (response.status === 204) {
-      return {} as T;
-    }
-
-    const data = await response.json();
-    return data as T;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    throw new Error(error instanceof Error ? error.message : 'Network failure or server is unreachable');
-  }
-}
-
-// Exported API Actions
-export const api = {
-  // Authentication APIs
-  auth: {
-    login: (body: any): Promise<ApiResponse<string>> => {
-      return request<ApiResponse<string>>('/api/v1/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-    },
     
-    register: (body: any): Promise<ApiResponse<UserResponse>> => {
-      return request<ApiResponse<UserResponse>>('/api/v1/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-    },
+    // Extract and format the error message from the ProblemDetail if available
+    if (error.response?.data) {
+      const problemDetail = error.response.data as ProblemDetail;
+      error.message = problemDetail.detail || problemDetail.title || error.message;
+    }
 
-    changePassword: (body: any): Promise<ApiResponse<void>> => {
-      return request<ApiResponse<void>>('/api/v1/auth/change-password', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-    },
-
-    logout: (): Promise<ApiResponse<void>> => {
-      return request<ApiResponse<void>>('/api/v1/auth/logout', {
-        method: 'POST',
-      });
-    },
-
-    refresh: (): Promise<ApiResponse<string>> => {
-      return request<ApiResponse<string>>('/api/v1/auth/refresh', {
-        method: 'POST',
-      });
-    },
-  },
-
-  // Dashboard APIs
-  dashboard: {
-    getStats: (): Promise<ApiResponse<DashboardStatsResponse>> => {
-      return request<ApiResponse<DashboardStatsResponse>>('/api/v1/dashboard/stats', {
-        method: 'GET',
-      });
-    },
-  },
-
-  // Role Management APIs
-  roles: {
-    getAll: (): Promise<ApiResponse<RoleResponse[]>> => {
-      return request<ApiResponse<RoleResponse[]>>('/api/v1/roles', {
-        method: 'GET',
-      });
-    },
-
-    create: (body: any): Promise<ApiResponse<RoleResponse>> => {
-      return request<ApiResponse<RoleResponse>>('/api/v1/roles', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-    },
-  },
-};
+    return Promise.reject(error);
+  }
+);
