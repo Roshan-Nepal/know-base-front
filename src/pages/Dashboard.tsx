@@ -1,34 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { StatCard } from '../components/dashboard/StatCard';
 import { RecentDocument } from '../components/dashboard/RecentDocument';
 import { AskSomething } from '../components/dashboard/AskSomething';
-import { api, type DashboardStatsResponse } from '../services/api';
+import { Link } from 'react-router-dom';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { formatTimeAgo, getDocType } from '../utils/formatters';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.dashboard.getStats();
-        if (response.success && response.data) {
-          setStats(response.data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch dashboard stats', err);
-      }
-    };
-    fetchStats();
-  }, []);
-
-  // Mock data to match the screenshot
-  const recentDocs = [
-    { id: 1, name: 'Q3 architecture review.pdf', type: 'pdf' as const, timeAgo: '2 hours ago', status: 'Ready' as const },
-    { id: 2, name: 'onboarding-notes.md', type: 'md' as const, timeAgo: 'yesterday', status: 'Ready' as const },
-    { id: 3, name: 'RagService.java', type: 'code' as const, timeAgo: 'Uploading', status: 'Processing' as const },
-  ];
+  const { stats, recentDocs } = useDashboardData();
 
   return (
     <div className="animate-fade-in w-full max-w-7xl mx-auto">
@@ -50,21 +31,27 @@ export const Dashboard: React.FC = () => {
         <div className="lg:col-span-2 bg-white dark:bg-[#222222] border border-slate-200 dark:border-[#333] rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Recent documents</h3>
-            <button className="text-sm text-[#3b82f6] hover:text-[#60a5fa] transition-colors">
-              View all
-            </button>
+            <Link to={"/documents"}>
+              <button className="text-sm text-[#3b82f6] hover:text-[#60a5fa] transition-colors">
+                View all
+              </button>
+            </Link>
           </div>
           
           <div className="flex flex-col">
-            {recentDocs.map((doc) => (
-              <RecentDocument
-                key={doc.id}
-                name={doc.name}
-                type={doc.type}
-                timeAgo={doc.timeAgo}
-                status={doc.status}
-              />
-            ))}
+            {recentDocs.length > 0 ? (
+              recentDocs.map((doc) => (
+                <RecentDocument
+                  key={doc.id}
+                  name={doc.name || 'Untitled'}
+                  type={getDocType(doc.type)}
+                  timeAgo={doc.createdAt ? formatTimeAgo(doc.createdAt) : 'unknown time'}
+                  status={doc.status === 'READY' || doc.status === 'INDEXED' ? 'Ready' : 'Processing'}
+                />
+              ))
+            ) : (
+              <p className="text-sm text-slate-500 py-4 text-center">No recent documents</p>
+            )}
           </div>
         </div>
 

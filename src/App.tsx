@@ -6,6 +6,8 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Settings } from './pages/Settings';
+import { Documents } from './pages/Documents';
+import { UploadDocument } from './pages/UploadDocument';
 import { Unauthorized } from './pages/Unauthorized';
 import { Database } from 'lucide-react';
 
@@ -70,6 +72,8 @@ function AppContent() {
         {/* General Protected Routes */}
         <Route index element={<Dashboard />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="documents" element={<Documents />} />
+        <Route path="documents/upload" element={<UploadDocument />} />
       </Route>
 
       {/* Unauthorized Access Denied Page */}

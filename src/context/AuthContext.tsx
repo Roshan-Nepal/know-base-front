@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { axiosInstance } from '../services/api';
+import type { ApiResponse, UserResponse } from '../types';
 
 export interface User {
   id: string;
@@ -83,7 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If no valid token, try to refresh using cookie
       if (!validToken) {
         try {
-          const refreshResponse = await api.auth.refresh();
+          const res = await axiosInstance.post<ApiResponse<string>>('/api/v1/auth/refresh');
+          const refreshResponse = res.data;
           if (refreshResponse.success && refreshResponse.data) {
             const newAccessToken = refreshResponse.data;
             localStorage.setItem('accessToken', newAccessToken);
@@ -115,7 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setError(null);
     try {
-      const response = await api.auth.login({ email, password });
+      const res = await axiosInstance.post<ApiResponse<string>>('/api/v1/auth/login', { email, password });
+      const response = res.data;
       if (response.success && response.data) {
         const accessToken = response.data;
         localStorage.setItem('accessToken', accessToken);
@@ -147,7 +150,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (username: string, email: string, password: string, roles: string[]) => {
     setError(null);
     try {
-      const response = await api.auth.register({ username, email, password, roles });
+      const res = await axiosInstance.post<ApiResponse<UserResponse>>('/api/v1/auth/register', { username, email, password, roles });
+      const response = res.data;
       if (!response.success) {
         throw new Error(response.message || 'Registration failed');
       }
@@ -166,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    api.auth.logout().catch((e: any) => console.error('Backend logout failed', e));
+    axiosInstance.post('/api/v1/auth/logout').catch((e: any) => console.error('Backend logout failed', e));
     logoutLocal();
   };
 

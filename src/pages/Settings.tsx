@@ -1,68 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon, Key, CheckCircle2, AlertCircle } from 'lucide-react';
-import { api } from '../services/api';
+import { useChangePassword } from '../hooks/useChangePassword';
 
 export const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
-  
-  // Change Password form states
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [pwdLoading, setPwdLoading] = useState(false);
-  const [pwdError, setPwdError] = useState<string | null>(null);
-  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPwdError(null);
-    setPwdSuccess(null);
-
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setPwdError('Please fill in all fields.');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setPwdError('New password must be at least 8 characters long.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPwdError('New passwords do not match.');
-      return;
-    }
-
-    setPwdLoading(true);
-
-    try {
-      // @ts-ignore - Assuming api.auth.changePassword exists from previous implementation
-      if (api.auth.changePassword) {
-        // @ts-ignore
-        const response = await api.auth.changePassword({ oldPassword, newPassword, confirmPassword });
-        if (response.success) {
-          setPwdSuccess(response.message || 'Password changed successfully!');
-          setOldPassword('');
-          setNewPassword('');
-          setConfirmPassword('');
-        } else {
-          setPwdError(response.message || 'Failed to change password.');
-        }
-      } else {
-        setPwdError('Change password API not available.');
-      }
-    } catch (err: any) {
-      setPwdError(err.message || 'An error occurred while changing password.');
-    } finally {
-      setPwdLoading(false);
-    }
-  };
-
-  const isLengthValid = newPassword.length >= 8;
-  const isMatchValid = newPassword.length > 0 && newPassword === confirmPassword;
-  const isFormValid = oldPassword.length > 0 && isLengthValid && isMatchValid;
+  const {
+    oldPassword, setOldPassword,
+    newPassword, setNewPassword,
+    confirmPassword, setConfirmPassword,
+    loading, error, success,
+    changePassword,
+    isLengthValid, isMatchValid, isFormValid
+  } = useChangePassword();
 
   return (
     <div className="w-full max-w-7xl mx-auto animate-fade-in space-y-8">
@@ -110,21 +61,21 @@ export const Settings: React.FC = () => {
             Change Password
           </h3>
           
-          {pwdSuccess && (
+          {success && (
             <div className="mb-4 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-start gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-emerald-800 dark:text-emerald-300 m-0 font-medium">{pwdSuccess}</p>
+              <p className="text-sm text-emerald-800 dark:text-emerald-300 m-0 font-medium">{success}</p>
             </div>
           )}
 
-          {pwdError && (
+          {error && (
             <div className="mb-4 p-3 rounded-lg bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-rose-800 dark:text-rose-300 m-0 font-medium">{pwdError}</p>
+              <p className="text-sm text-rose-800 dark:text-rose-300 m-0 font-medium">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleChangePassword} className="space-y-4">
+          <form onSubmit={changePassword} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 Current Password
@@ -183,10 +134,10 @@ export const Settings: React.FC = () => {
 
             <button
               type="submit"
-              disabled={pwdLoading || !isFormValid}
+              disabled={loading || !isFormValid}
               className="w-full py-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-black font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
             >
-              {pwdLoading ? (
+              {loading ? (
                 <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 "Update Password"
