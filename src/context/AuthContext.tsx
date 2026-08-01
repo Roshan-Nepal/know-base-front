@@ -51,6 +51,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const logoutLocal = React.useCallback(() => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('username');
+    setUser(null);
+    setError(null);
+  }, []);
+
+  // Listen for unauthorized events dispatched by API interceptors
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logoutLocal();
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, [logoutLocal]);
+
   // Initialize auth state on mount
   useEffect(() => {
     const initAuth = async () => {
@@ -100,6 +118,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 username: username,
                 roles: decoded.roles || [],
               });
+            } else {
+              logoutLocal();
             }
           } else {
             logoutLocal();
@@ -112,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initAuth();
-  }, []);
+  }, [logoutLocal]);
 
   const login = async (email: string, password: string) => {
     setError(null);
@@ -160,13 +180,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(msg);
       throw new Error(msg);
     }
-  };
-
-  const logoutLocal = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('username');
-    setUser(null);
-    setError(null);
   };
 
   const logout = () => {
