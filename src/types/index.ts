@@ -13,6 +13,8 @@ export interface PageResponse<T> {
   size: number;
   totalElements: number;
   totalPages: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 }
 
 export interface UserResponse {
@@ -48,6 +50,27 @@ export interface DocumentResponse {
 
 export interface DocumentDetailResponse extends DocumentResponse {
   content: string;
+}
+
+export type MessageRole = 'USER' | 'ASSISTANT';
+
+export interface ChatRequest {
+  conversationId?: string | null;
+  message: string;
+}
+
+export interface ConversationResponse {
+  id: string;
+  title: string;
+  createdAt: string;
+}
+
+export interface MessageResponse {
+  id: string;
+  role: MessageRole;
+  content: string;
+  sourceChunks?: string[] | null;
+  createdAt: string;
 }
 
 // Spring RFC 7807 Problem Detail format for backend errors
