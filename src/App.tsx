@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Settings } from './pages/Settings';
 import { Documents } from './pages/Documents';
 import { UploadDocument } from './pages/UploadDocument';
+import { Chat } from './pages/Chat';
 import { Unauthorized } from './pages/Unauthorized';
 import { Database } from 'lucide-react';
 
@@ -74,6 +75,8 @@ function AppContent() {
         <Route path="settings" element={<Settings />} />
         <Route path="documents" element={<Documents />} />
         <Route path="documents/upload" element={<UploadDocument />} />
+        <Route path="chat" element={<Chat />} />
+        <Route path="chat/:conversationId" element={<Chat />} />
       </Route>
 
       {/* Unauthorized Access Denied Page */}
