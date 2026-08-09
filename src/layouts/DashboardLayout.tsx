@@ -20,6 +20,7 @@ export const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
 
   const handleLogout = async () => {
     try {
@@ -31,7 +32,7 @@ export const DashboardLayout: React.FC = () => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Documents', path: '/documents', icon: FileText },
-    { name: 'Chat', path: '#chat', icon: MessageSquare },
+    { name: 'Chat', path: '/chat', icon: MessageSquare },
     ...(user?.roles?.includes('ROLE_ADMIN') ? [{ name: 'Admin', path: '#admin', icon: ShieldCheck }] : [])
   ];
 
@@ -77,7 +78,9 @@ export const DashboardLayout: React.FC = () => {
           <nav className="px-3 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path || (item.path === '/' && location.pathname === '/');
+              const isActive = location.pathname === item.path || 
+                (item.path === '/' && location.pathname === '/') ||
+                (item.path === '/chat' && location.pathname.startsWith('/chat'));
               return (
                 <Link
                   key={item.name}
@@ -142,16 +145,27 @@ export const DashboardLayout: React.FC = () => {
         
         {/* Top Bar */}
         <header className="h-16 border-b border-slate-200 dark:border-[#333] flex items-center justify-between px-8 shrink-0 bg-white dark:bg-[#171717] transition-colors">
-          <div className="flex-1 max-w-2xl relative">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              const trimmed = headerSearchQuery.trim();
+              if (!trimmed) return;
+              navigate('/chat', { state: { initialPrompt: trimmed } });
+              setHeaderSearchQuery('');
+            }}
+            className="flex-1 max-w-2xl relative"
+          >
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-slate-400 dark:text-[#71717a]" />
             </div>
             <input 
               type="text" 
+              value={headerSearchQuery}
+              onChange={(e) => setHeaderSearchQuery(e.target.value)}
               placeholder="Search documents, ask a question..." 
               className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-[#222222] border border-transparent focus:border-slate-300 dark:focus:border-[#3f3f46] text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-[#71717a] focus:outline-none transition-colors"
             />
-          </div>
+          </form>
           <div className="ml-4">
             <Link 
               to="/documents/upload"

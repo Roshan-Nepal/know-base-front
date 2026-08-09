@@ -1,5 +1,4 @@
 import axios from 'axios';
-
 import type { ApiResponse, ProblemDetail } from '../types';
 
 // API Client for the Know-Base App
